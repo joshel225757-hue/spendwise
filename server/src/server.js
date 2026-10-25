@@ -11,10 +11,24 @@ const budgetRoutes = require("./routes/budgetRoutes");
 
 const app = express();
 
+// Allowed frontend URLs
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 // Middleware
-app.use(cors({
-  origin: "http://localhost:5173"
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    }
+  })
+);
 
 app.use(express.json());
 
@@ -45,11 +59,11 @@ app.use("/api/budgets", budgetRoutes);
 async function startServer() {
   try {
     if (!process.env.MONGODB_URI) {
-      throw new Error("MONGODB_URI is missing from .env");
+      throw new Error("MONGODB_URI is missing");
     }
 
     if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET is missing from .env");
+      throw new Error("JWT_SECRET is missing");
     }
 
     await mongoose.connect(process.env.MONGODB_URI);
@@ -57,11 +71,16 @@ async function startServer() {
 
     const PORT = process.env.PORT || 5000;
 
-    app.listen(PORT, () => {
-      console.log(`SpendWise server running on port ${PORT}`);
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(
+        `SpendWise server running on port ${PORT}`
+      );
     });
   } catch (error) {
-    console.error("Server startup failed:", error.message);
+    console.error(
+      "Server startup failed:",
+      error.message
+    );
     process.exit(1);
   }
 }
