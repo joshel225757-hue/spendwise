@@ -11,11 +11,16 @@ const budgetRoutes = require("./routes/budgetRoutes");
 
 const app = express();
 
+// Allowed frontend URLs
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://spendwise-nu-ten.vercel.app",
   process.env.FRONTEND_URL,
-].filter(Boolean);
+]
+  .filter(Boolean)
+  .map((url) => url.replace(/\/$/, ""));
 
+// CORS middleware
 app.use(
   cors({
     origin(origin, callback) {
@@ -25,15 +30,20 @@ app.use(
 
       return callback(new Error("Not allowed by CORS"));
     },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+// JSON middleware
 app.use(express.json());
 
+// Home route
 app.get("/", (req, res) => {
   res.send("SpendWise Backend is Running!");
 });
 
+// Health check
 app.get("/api/health", (req, res) => {
   res.json({
     status: "success",
@@ -45,11 +55,13 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/budgets", budgetRoutes);
 
+// Connect to MongoDB and start server
 async function startServer() {
   try {
     if (!process.env.MONGODB_URI) {
@@ -61,6 +73,7 @@ async function startServer() {
     }
 
     await mongoose.connect(process.env.MONGODB_URI);
+
     console.log("MongoDB connected successfully!");
 
     const PORT = process.env.PORT || 5000;
